@@ -7,6 +7,10 @@ import { Dialog } from "@systutor/shell/ui/dialog";
 import { getBalanceDetail, listProductWarehouseLedger, stockKeys } from "../api";
 
 const OPERATION_LABELS: Record<string, string> = {
+  RESERVE: "Reserva",
+  reserve: "Reserva",
+  RELEASE: "Liberación de reserva",
+  release: "Liberación de reserva",
   SALE_OUT: "Salida por venta",
   sale_out: "Salida por venta",
   PURCHASE_IN: "Entrada por compra",
@@ -183,7 +187,7 @@ export function ModalDetalleStock({
         <CardContent>
           <DataTable
             columns={[
-              { key: "operation", header: "Operación", render: (row) => row.operation },
+              { key: "operation", header: "Operación", render: (row) => OPERATION_LABELS[row.operation] ?? row.operation },
               { key: "quantity", header: "Cantidad", render: (row) => row.quantity },
               { key: "after", header: "Saldo", render: (row) => row.balance_after },
               { key: "reference", header: "Referencia", render: (row) => formatReference(row.reference_type, row.reference_id, row.operation) },
