@@ -63,7 +63,9 @@ class StockLedger(Base):
     product_id: Mapped[str] = mapped_column(
         ForeignKey("prod_products.id"), nullable=False, index=True
     )
-    warehouse_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    warehouse_id: Mapped[str] = mapped_column(
+        ForeignKey("branches.id"), nullable=False, index=True
+    )
     operation: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False)
     balance_after: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False)
@@ -96,7 +98,9 @@ class StockBalance(Base):
     product_id: Mapped[str] = mapped_column(
         ForeignKey("prod_products.id"), nullable=False, index=True
     )
-    warehouse_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    warehouse_id: Mapped[str] = mapped_column(
+        ForeignKey("branches.id"), nullable=False, index=True
+    )
     quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False, default=0)
     reserved_quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False, default=0)
     total_cost: Mapped[float] = mapped_column(Numeric(14, 4), nullable=False, default=0)
@@ -123,7 +127,9 @@ class StockConfig(Base):
     product_id: Mapped[str] = mapped_column(
         ForeignKey("prod_products.id"), nullable=False, index=True
     )
-    warehouse_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    warehouse_id: Mapped[str] = mapped_column(
+        ForeignKey("branches.id"), nullable=False, index=True
+    )
     min_quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False, default=0)
     max_quantity: Mapped[float | None] = mapped_column(Numeric(12, 3), nullable=True)
     allow_negative_stock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -162,7 +168,9 @@ class StockAllocation(Base):
     product_id: Mapped[str] = mapped_column(
         ForeignKey("prod_products.id"), nullable=False, index=True
     )
-    warehouse_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    warehouse_id: Mapped[str] = mapped_column(
+        ForeignKey("branches.id"), nullable=False, index=True
+    )
     quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False)
     remaining_quantity: Mapped[float] = mapped_column(Numeric(12, 3), nullable=False)
     reference_type: Mapped[str] = mapped_column(String(50), nullable=False)

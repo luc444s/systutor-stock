@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from systutor.kernel.tenants.models import Branch
 
 from plugins.productos.backend.models import Product
-from plugins.stock.backend.models import StockWarehouse
 
 
 def get_product(db: Session, *, tenant_id: str, product_id: str) -> Product | None:
@@ -23,16 +23,17 @@ def require_product(db: Session, *, tenant_id: str, product_id: str) -> Product:
     return product
 
 
-def get_warehouse(db: Session, *, tenant_id: str, warehouse_id: str) -> StockWarehouse | None:
+def get_warehouse(db: Session, *, tenant_id: str, warehouse_id: str) -> Branch | None:
     return db.scalar(
-        select(StockWarehouse).where(
-            StockWarehouse.id == warehouse_id,
-            StockWarehouse.tenant_id == tenant_id,
+        select(Branch).where(
+            Branch.id == warehouse_id,
+            Branch.tenant_id == tenant_id,
+            Branch.is_active.is_(True),
         )
     )
 
 
-def require_warehouse(db: Session, *, tenant_id: str, warehouse_id: str) -> StockWarehouse:
+def require_warehouse(db: Session, *, tenant_id: str, warehouse_id: str) -> Branch:
     warehouse = get_warehouse(db, tenant_id=tenant_id, warehouse_id=warehouse_id)
     if warehouse is None:
         raise LookupError("Warehouse not found")
@@ -44,12 +45,12 @@ def list_warehouses(
     *,
     tenant_id: str,
     allowed_warehouse_ids: tuple[str, ...] | None,
-) -> list[StockWarehouse]:
-    stmt = select(StockWarehouse).where(
-        StockWarehouse.tenant_id == tenant_id,
-        StockWarehouse.is_active.is_(True),
+) -> list[Branch]:
+    stmt = select(Branch).where(
+        Branch.tenant_id == tenant_id,
+        Branch.is_active.is_(True),
     )
     if allowed_warehouse_ids is not None:
-        stmt = stmt.where(StockWarehouse.id.in_(allowed_warehouse_ids))
-    stmt = stmt.order_by(StockWarehouse.name.asc())
+        stmt = stmt.where(Branch.id.in_(allowed_warehouse_ids))
+    stmt = stmt.order_by(Branch.name.asc())
     return list(db.scalars(stmt))

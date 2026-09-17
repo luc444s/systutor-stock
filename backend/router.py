@@ -157,13 +157,13 @@ def get_stock_warehouses_catalog(
         StockWarehouseRead(
             id=warehouse.id,
             tenant_id=warehouse.tenant_id,
-            branch_id=warehouse.branch_id,
+            branch_id=warehouse.id,
             name=warehouse.name,
             code=warehouse.code,
-            address=warehouse.address,
-            phone=warehouse.phone,
+            address=None,
+            phone=None,
             is_active=warehouse.is_active,
-            is_primary=warehouse.is_primary,
+            is_primary=False,
             created_at=warehouse.created_at,
             updated_at=warehouse.updated_at,
         )

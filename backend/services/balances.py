@@ -4,9 +4,10 @@ from decimal import Decimal
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
+from systutor.kernel.tenants.models import Branch
 
 from plugins.productos.backend.models import Product
-from plugins.stock.backend.models import StockBalance, StockConfig, StockLedger, StockWarehouse
+from plugins.stock.backend.models import StockBalance, StockConfig, StockLedger
 from plugins.stock.backend.schemas import (
     StockBalancePageRead,
     StockBalanceRead,
@@ -100,10 +101,10 @@ def _ensure_catalog_balances(
         else:
             requested = set(
                 db.scalars(
-                    select(StockWarehouse.id).where(
+                    select(Branch.id).where(
                         and_(
-                            StockWarehouse.tenant_id == tenant_id,
-                            StockWarehouse.is_active.is_(True),
+                            Branch.tenant_id == tenant_id,
+                            Branch.is_active.is_(True),
                         )
                     )
                 )
@@ -112,16 +113,16 @@ def _ensure_catalog_balances(
             return
 
     products = list(db.scalars(select(Product).where(Product.tenant_id == tenant_id)))
-    warehouses_q = select(StockWarehouse).where(
+    warehouses_q = select(Branch).where(
         and_(
-            StockWarehouse.tenant_id == tenant_id,
-            StockWarehouse.is_active.is_(True),
+            Branch.tenant_id == tenant_id,
+            Branch.is_active.is_(True),
         )
     )
     if warehouse_id is not None:
-        warehouses_q = warehouses_q.where(StockWarehouse.id == warehouse_id)
+        warehouses_q = warehouses_q.where(Branch.id == warehouse_id)
     elif allowed_warehouse_ids:
-        warehouses_q = warehouses_q.where(StockWarehouse.id.in_(list(allowed_warehouse_ids)))
+        warehouses_q = warehouses_q.where(Branch.id.in_(list(allowed_warehouse_ids)))
     warehouses = list(db.scalars(warehouses_q))
     if not products or not warehouses:
         return
@@ -178,9 +179,9 @@ def list_balances(
             allowed_warehouse_ids=allowed_warehouse_ids,
         )
     stmt = (
-        select(StockBalance, Product, LogisticsWarehouse, StockConfig)
+        select(StockBalance, Product, Branch, StockConfig)
         .join(Product, Product.id == StockBalance.product_id)
-        .join(LogisticsWarehouse, LogisticsWarehouse.id == StockBalance.warehouse_id)
+        .join(Branch, Branch.id == StockBalance.warehouse_id)
         .outerjoin(
             StockConfig,
             (StockConfig.tenant_id == StockBalance.tenant_id)
@@ -197,8 +198,8 @@ def list_balances(
             or_(
                 Product.sku.ilike(term),
                 Product.name.ilike(term),
-                LogisticsWarehouse.name.ilike(term),
-                LogisticsWarehouse.code.ilike(term),
+                Branch.name.ilike(term),
+                Branch.code.ilike(term),
             )
         )
     if product_id:
@@ -216,7 +217,7 @@ def list_balances(
 
     total = db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
     rows = db.execute(
-        stmt.order_by(Product.name.asc(), LogisticsWarehouse.name.asc()).offset(offset).limit(limit)
+        stmt.order_by(Product.name.asc(), Branch.name.asc()).offset(offset).limit(limit)
     ).all()
     return StockBalancePageRead(
         items=[
@@ -240,8 +241,8 @@ def list_product_balances(
 ) -> list[StockBalanceRead]:
     product = require_product(db, tenant_id=tenant_id, product_id=product_id)
     stmt = (
-        select(StockBalance, LogisticsWarehouse, StockConfig)
-        .join(LogisticsWarehouse, LogisticsWarehouse.id == StockBalance.warehouse_id)
+        select(StockBalance, Branch, StockConfig)
+        .join(Branch, Branch.id == StockBalance.warehouse_id)
         .outerjoin(
             StockConfig,
             (StockConfig.tenant_id == StockBalance.tenant_id)
@@ -252,7 +253,7 @@ def list_product_balances(
             StockBalance.tenant_id == tenant_id,
             StockBalance.product_id == product_id,
         )
-        .order_by(LogisticsWarehouse.name.asc())
+        .order_by(Branch.name.asc())
     )
     if allowed_warehouse_ids is not None:
         stmt = stmt.where(StockBalance.warehouse_id.in_(allowed_warehouse_ids))
@@ -319,8 +320,8 @@ def list_ledger_entries(
 ) -> list[StockLedgerRead]:
     product = require_product(db, tenant_id=tenant_id, product_id=product_id)
     stmt = (
-        select(StockLedger, LogisticsWarehouse)
-        .join(LogisticsWarehouse, LogisticsWarehouse.id == StockLedger.warehouse_id)
+        select(StockLedger, Branch)
+        .join(Branch, Branch.id == StockLedger.warehouse_id)
         .where(
             StockLedger.tenant_id == tenant_id,
             StockLedger.product_id == product_id,
@@ -374,11 +375,11 @@ def list_configs(
     allowed_warehouse_ids: tuple[str, ...] | None,
 ) -> list[StockConfigRead]:
     stmt = (
-        select(StockConfig, Product, LogisticsWarehouse)
+        select(StockConfig, Product, Branch)
         .join(Product, Product.id == StockConfig.product_id)
-        .join(LogisticsWarehouse, LogisticsWarehouse.id == StockConfig.warehouse_id)
+        .join(Branch, Branch.id == StockConfig.warehouse_id)
         .where(StockConfig.tenant_id == tenant_id)
-        .order_by(Product.name.asc(), LogisticsWarehouse.name.asc())
+        .order_by(Product.name.asc(), Branch.name.asc())
     )
     if product_id:
         stmt = stmt.where(StockConfig.product_id == product_id)
@@ -420,9 +421,9 @@ def list_global_ledger(
     offset: int,
 ) -> list[StockLedgerRead]:
     stmt = (
-        select(StockLedger, Product, LogisticsWarehouse)
+        select(StockLedger, Product, Branch)
         .join(Product, Product.id == StockLedger.product_id)
-        .join(LogisticsWarehouse, LogisticsWarehouse.id == StockLedger.warehouse_id)
+        .join(Branch, Branch.id == StockLedger.warehouse_id)
         .where(
             StockLedger.tenant_id == tenant_id,
         )
@@ -487,10 +488,10 @@ def ensure_balances_for_product(
 
     warehouses = list(
         db.scalars(
-            select(LogisticsWarehouse).where(
+            select(Branch).where(
                 and_(
-                    LogisticsWarehouse.tenant_id == tenant_id,
-                    LogisticsWarehouse.is_active.is_(True),
+                    Branch.tenant_id == tenant_id,
+                    Branch.is_active.is_(True),
                 )
             )
         )

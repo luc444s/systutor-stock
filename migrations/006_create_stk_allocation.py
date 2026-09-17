@@ -17,7 +17,7 @@ def upgrade(db) -> None:
                 tenant_id           VARCHAR(36) NOT NULL REFERENCES tenants(id),
                 allocation_group_id VARCHAR(36),
                 product_id          VARCHAR(36) NOT NULL REFERENCES prod_products(id),
-                warehouse_id        VARCHAR(36) NOT NULL REFERENCES lg_warehouses(id),
+                warehouse_id        VARCHAR(36) NOT NULL REFERENCES branches(id),
                 quantity            NUMERIC(12,3) NOT NULL,
                 remaining_quantity  NUMERIC(12,3) NOT NULL,
                 reference_type      VARCHAR(50) NOT NULL,

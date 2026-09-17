@@ -6,6 +6,7 @@ from sqlalchemy.sql.schema import Table
 from systutor.core.database import Base
 
 import plugins.productos.backend.models  # noqa: F401
+import systutor.kernel.tenants.models  # noqa: F401
 from plugins.stock.backend.models import StockBalance, StockConfig, StockLedger, StockWarehouse
 
 revision = "0001"
